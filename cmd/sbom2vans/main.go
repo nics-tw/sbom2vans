@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	var name string
+
 	var SBOMInputPaths string
 
 	var rootCmd = &cobra.Command{
@@ -26,6 +26,7 @@ func main() {
 				SBOMPaths: flagged,
 			}, nil)
 
+			// vulnResult.Flatten 輸出可能會有重複，原因是 vf.Package, vf.Package.Vulnerability 會被壓成同一個 struct
 			for _, vf := range vulnResult.Flatten() {
 				fmt.Printf("eco: %s, name: %s, ver: %s!\n", vf.Package.Ecosystem, vf.Package.Name, vf.Package.Version)
 				fmt.Printf("vul.Aliases: %s\n", vf.Vulnerability.Aliases)
@@ -38,7 +39,6 @@ func main() {
 		},
 	}
 
-	rootCmd.Flags().StringVarP(&name, "name", "n", "World", "Specify a name")
 	rootCmd.Flags().StringVarP(&SBOMInputPaths, "input-file", "i", "", "Specify a SBOM file to scan")
 
 	if err := rootCmd.Execute(); err != nil {
