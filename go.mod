@@ -2,6 +2,8 @@ module github.com/nics-tw/sbom2vans
 
 go 1.22.1
 
+require github.com/pandatix/nvdapi v0.6.5
+
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	deps.dev/api/v3alpha v0.0.0-20240312000934-38ffc8dd1d92 // indirect
@@ -22,6 +24,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-containerregistry v0.19.1 // indirect
 	github.com/google/osv-scanner v1.7.1 // indirect
+	github.com/gorilla/schema v1.2.1 // indirect
 	github.com/ianlancetaylor/demangle v0.0.0-20240312041847-bd984b5ce465 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
