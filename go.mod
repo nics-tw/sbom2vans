@@ -2,7 +2,11 @@ module github.com/nics-tw/sbom2vans
 
 go 1.22.1
 
-require github.com/pandatix/nvdapi v0.6.5
+require (
+	github.com/google/osv-scanner v1.7.1
+	github.com/pandatix/nvdapi v0.6.5
+	github.com/spf13/cobra v1.8.0
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -23,7 +27,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-containerregistry v0.19.1 // indirect
-	github.com/google/osv-scanner v1.7.1 // indirect
 	github.com/gorilla/schema v1.2.1 // indirect
 	github.com/ianlancetaylor/demangle v0.0.0-20240312041847-bd984b5ce465 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -43,14 +46,13 @@ require (
 	github.com/skeema/knownhosts v1.2.1 // indirect
 	github.com/spdx/gordf v0.0.0-20221230105357-b735bd5aac89 // indirect
 	github.com/spdx/tools-golang v0.5.3 // indirect
-	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vbatts/tar-split v0.11.5 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/exp v0.0.0-20240314144324-c7f7c6466f7f // indirect
 	golang.org/x/mod v0.16.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
