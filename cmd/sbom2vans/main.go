@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -49,7 +53,7 @@ func main() {
 
 								CVEs = append(CVEs, CVE{
 									Name:      vf.Package.Name,
-									Version:   extractVersion(vf.Package.Version),
+									Version:   vf.Package.Version,
 									Ecosystem: vf.Package.Ecosystem,
 									CVE:       []string{alias},
 								})
@@ -66,8 +70,6 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-
-				//
 				resp, err := nvdapi.GetCVEs(client, nvdapi.GetCVEsParams{
 					CVEID: ptr(cve.CVE[0]),
 				})
@@ -84,7 +86,29 @@ func main() {
 							// print all cpe_match
 							for _, cpe := range node.CPEMatch {
 								if strings.Contains(cpe.Criteria, extractPackageName(cve.Name)) {
-									CVEs[i].CPE = cpe.Criteria
+
+									// Split the CPE and replace the version
+									splitCPE := strings.Split(cpe.Criteria, ":")
+									splitCPE[5] = extractVersion(cve.Version)
+									cpeWithVersion := strings.Join(splitCPE, ":")
+									CVEs[i].CPE = cpeWithVersion
+
+									resp, err := nvdapi.GetCPEs(client, nvdapi.GetCPEsParams{
+										CPEMatchString: ptr(cpeWithVersion),
+									})
+
+									if err != nil {
+										log.Fatal(err)
+									}
+
+									// Get CPE titles as VANS request product_cpename column
+									if len(resp.Products) > 0 {
+										for _, title := range resp.Products[0].CPE.Titles {
+											if title.Lang == "en" {
+												CVEs[i].ProductCPEName = title.Title
+											}
+										}
+									}
 								}
 							}
 						}
@@ -92,10 +116,58 @@ func main() {
 				}
 
 			}
-
+			var vansData VANS
+			vansData.APIKey = ""
 			for _, cve := range CVEs {
-				fmt.Printf("CVE: %v, eco: %s, name: %s, ver: %s, cpe: %s\n", cve.CVE, cve.Ecosystem, cve.Name, cve.Version, cve.CPE)
+				// purl := packageurl.NewPackageURL(cve.Ecosystem, "", cve.Name, cve.Version, nil, "")
+				// fmt.Printf("CVE: %v, eco: %s, name: %s, ver: %s, cpe: %s, cpeName: %s\n", cve.CVE, cve.Ecosystem, cve.Name, cve.Version, cve.CPE, cve.ProductCPEName)
+
+				if cve.CPE != "" && cve.ProductCPEName != "" {
+					parts := strings.Split(cve.CPE, ":")
+					vansData.Data = append(vansData.Data, VANSItem{
+						OID:            "2.16.886.101.20007",
+						UnitName:       "監察院",
+						AssetNumber:    "1",
+						ProductName:    parts[4],
+						ProductVendor:  parts[3],
+						ProductVersion: parts[5],
+						Category:       "software",
+						CPE23:          cve.CPE,
+						ProductCPEName: cve.ProductCPEName,
+					})
+				}
+
 			}
+
+			// Marshal your struct into JSON
+			jsonData, err := json.Marshal(vansData)
+			fmt.Println(string(jsonData))
+
+			if err != nil {
+				fmt.Println("Error marshalling JSON:", err)
+				return
+			}
+
+			// Skip SSL verification as testing env
+			http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			// Make a POST request
+			resp, err := http.Post("https://vans.nat.gov.tw/rest/vans/InsertSystemUnitproduct", "application/json", bytes.NewBuffer(jsonData))
+			if err != nil {
+				fmt.Println("Error making POST request:", err)
+				return
+			}
+			defer resp.Body.Close()
+
+			// Read response body
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Println("Error reading response body:", err)
+				return
+			}
+
+			// Print response status and body
+			fmt.Println("Response Status:", resp.Status)
+			fmt.Println("Response Body:", string(body))
 
 			if err != nil {
 				log.Fatal(err)
@@ -113,11 +185,29 @@ func main() {
 }
 
 type CVE struct {
-	Name      string   `json:"name"`
-	Version   string   `json:"version"`
-	Ecosystem string   `json:"ecosystem"`
-	CVE       []string `json:"cve"`
-	CPE       string   `json:"cpe"`
+	Name           string   `json:"name"`
+	Version        string   `json:"version"`
+	Ecosystem      string   `json:"ecosystem"`
+	CVE            []string `json:"cve"`
+	CPE            string   `json:"cpe"`
+	ProductCPEName string   `json:"product_cpename"`
+}
+
+type VANS struct {
+	APIKey string     `json:"api_key"`
+	Data   []VANSItem `json:"data"`
+}
+
+type VANSItem struct {
+	OID            string `json:"oid"`
+	UnitName       string `json:"unit_name"`
+	AssetNumber    string `json:"asset_number"`
+	ProductName    string `json:"product_name"`
+	ProductVendor  string `json:"product_vendor"`
+	ProductVersion string `json:"product_version"`
+	Category       string `json:"category"`
+	CPE23          string `json:"cpe23"`
+	ProductCPEName string `json:"product_cpename"`
 }
 
 func isCVEExist(cves []CVE, cve string) bool {
