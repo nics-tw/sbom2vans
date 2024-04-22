@@ -20,102 +20,13 @@ import (
 func main() {
 
 	var SBOMInputPaths string
-	var CVEs []CVE
 
 	var rootCmd = &cobra.Command{
 		Use:   "sbom2vans",
 		Short: "A simple CLI tool",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			flagged := []string{
-				SBOMInputPaths,
-			} // your real code
-
-			vulnResult, err := osvscanner.DoScan(osvscanner.ScannerActions{
-				SBOMPaths: flagged,
-			}, nil)
-
-			for _, vf := range vulnResult.Flatten() {
-
-				for _, alias := range vf.Vulnerability.Aliases {
-					if strings.HasPrefix(alias, "CVE") {
-
-						if !isCVEExist(CVEs, alias) {
-
-							if isPackageExist(CVEs, vf.Package.Name) {
-								// Find the package and add the CVE to the CVE array
-								for i, cve := range CVEs {
-									if cve.Name == vf.Package.Name {
-										CVEs[i].CVE = append(CVEs[i].CVE, alias)
-									}
-								}
-							} else {
-
-								CVEs = append(CVEs, CVE{
-									Name:      vf.Package.Name,
-									Version:   vf.Package.Version,
-									Ecosystem: vf.Package.Ecosystem,
-									CVE:       []string{alias},
-								})
-							}
-						}
-					}
-				}
-			}
-
-			// Get CPEs for each CVE
-			for i, cve := range CVEs {
-				apiKey := ""
-				client, err := nvdapi.NewNVDClient(&http.Client{}, apiKey)
-				if err != nil {
-					log.Fatal(err)
-				}
-				resp, err := nvdapi.GetCVEs(client, nvdapi.GetCVEsParams{
-					CVEID: ptr(cve.CVE[0]),
-				})
-
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				// Only request per CVE for each request, therefore, the first element is the only one
-
-				if resp.Vulnerabilities[0].CVE.Configurations != nil && len(resp.Vulnerabilities[0].CVE.Configurations[0].Nodes) > 0 {
-					for _, config := range resp.Vulnerabilities[0].CVE.Configurations {
-						for _, node := range config.Nodes {
-							// print all cpe_match
-							for _, cpe := range node.CPEMatch {
-								if strings.Contains(cpe.Criteria, extractPackageName(cve.Name)) {
-
-									// Split the CPE and replace the version
-									splitCPE := strings.Split(cpe.Criteria, ":")
-									splitCPE[5] = extractVersion(cve.Version)
-									cpeWithVersion := strings.Join(splitCPE, ":")
-									CVEs[i].CPE = cpeWithVersion
-
-									resp, err := nvdapi.GetCPEs(client, nvdapi.GetCPEsParams{
-										CPEMatchString: ptr(cpeWithVersion),
-									})
-
-									if err != nil {
-										log.Fatal(err)
-									}
-
-									// Get CPE titles as VANS request product_cpename column
-									if len(resp.Products) > 0 {
-										for _, title := range resp.Products[0].CPE.Titles {
-											if title.Lang == "en" {
-												CVEs[i].ProductCPEName = title.Title
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-
-			}
+			CVEs := getCPEFromSBOM(SBOMInputPaths)
 			var vansData VANS
 			vansData.APIKey = ""
 			for _, cve := range CVEs {
@@ -258,4 +169,103 @@ func extractPackageName(input string) string {
 		lastPart = strings.Join(parts[len(parts)-2:], "/")
 	}
 	return lastPart
+}
+
+// get cpe from sbom
+func getCPEFromSBOM(SBOMInputPaths string) []CVE {
+	var CVEs []CVE
+	apiKey := ""
+
+	flagged := []string{
+		SBOMInputPaths,
+	} // your real code
+
+	vulnResult, _ := osvscanner.DoScan(osvscanner.ScannerActions{
+		SBOMPaths: flagged,
+	}, nil)
+
+	// Get all CVEs from the SBOM by using osv-scanner
+	for _, vf := range vulnResult.Flatten() {
+		for _, alias := range vf.Vulnerability.Aliases {
+			if strings.HasPrefix(alias, "CVE") {
+
+				if !isCVEExist(CVEs, alias) {
+
+					if isPackageExist(CVEs, vf.Package.Name) {
+						// Find the package and add the CVE to the CVE array
+						for i, cve := range CVEs {
+							if cve.Name == vf.Package.Name {
+								CVEs[i].CVE = append(CVEs[i].CVE, alias)
+							}
+						}
+					} else {
+
+						CVEs = append(CVEs, CVE{
+							Name:      vf.Package.Name,
+							Version:   vf.Package.Version,
+							Ecosystem: vf.Package.Ecosystem,
+							CVE:       []string{alias},
+						})
+					}
+				}
+			}
+		}
+	}
+
+	// Get CPEs for each CVE
+	for i, cve := range CVEs {
+
+		client, err := nvdapi.NewNVDClient(&http.Client{}, apiKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		resp, err := nvdapi.GetCVEs(client, nvdapi.GetCVEsParams{
+			CVEID: ptr(cve.CVE[0]),
+		})
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Only request per CVE for each request, therefore, the first element is the only one
+
+		if resp.Vulnerabilities[0].CVE.Configurations != nil && len(resp.Vulnerabilities[0].CVE.Configurations[0].Nodes) > 0 {
+			for _, config := range resp.Vulnerabilities[0].CVE.Configurations {
+				for _, node := range config.Nodes {
+					// print all cpe_match
+					for _, cpe := range node.CPEMatch {
+						if strings.Contains(cpe.Criteria, extractPackageName(cve.Name)) {
+
+							// Split the CPE and replace the version
+							splitCPE := strings.Split(cpe.Criteria, ":")
+							splitCPE[5] = extractVersion(cve.Version)
+							cpeWithVersion := strings.Join(splitCPE, ":")
+							CVEs[i].CPE = cpeWithVersion
+							// print cpeWithVersion
+							// fmt.Printf("CPE with version: %s\n", cpeWithVersion)
+
+							resp, err := nvdapi.GetCPEs(client, nvdapi.GetCPEsParams{
+								CPEMatchString: ptr(cpeWithVersion),
+							})
+
+							if err != nil {
+								log.Fatal(err)
+							}
+
+							// Get CPE titles as VANS request product_cpename column
+							if len(resp.Products) > 0 {
+								for _, title := range resp.Products[0].CPE.Titles {
+									if title.Lang == "en" {
+										CVEs[i].ProductCPEName = title.Title
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+	}
+	return CVEs
 }
