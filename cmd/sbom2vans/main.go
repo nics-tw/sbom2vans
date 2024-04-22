@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,7 +13,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/osv-scanner/pkg/lockfile"
+	"github.com/google/osv-scanner/pkg/models"
 	"github.com/google/osv-scanner/pkg/osvscanner"
+	"github.com/google/osv-scanner/pkg/reporter"
+	"github.com/nics-tw/sbom2vans/internal/sbom"
 	"github.com/pandatix/nvdapi/v2"
 	"github.com/spf13/cobra"
 )
@@ -27,6 +32,16 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			CVEs := getCPEFromSBOM(SBOMInputPaths)
+			r := &reporter.VoidReporter{}
+			pkgs, err := scanSBOMFile(r, SBOMInputPaths, false)
+			if err != nil {
+				log.Fatal(err)
+			}
+			// print all packages
+			for _, pkg := range pkgs {
+				fmt.Printf("Package: %s\n", pkg.PURL)
+			}
+
 			var vansData VANS
 			vansData.APIKey = ""
 			for _, cve := range CVEs {
@@ -214,7 +229,6 @@ func getCPEFromSBOM(SBOMInputPaths string) []CVE {
 
 	// Get CPEs for each CVE
 	for i, cve := range CVEs {
-
 		client, err := nvdapi.NewNVDClient(&http.Client{}, apiKey)
 		if err != nil {
 			log.Fatal(err)
@@ -268,4 +282,99 @@ func getCPEFromSBOM(SBOMInputPaths string) []CVE {
 
 	}
 	return CVEs
+}
+
+func scanSBOMFile(r reporter.Reporter, path string, fromFSScan bool) ([]scannedPackage, error) {
+	var errs []error
+	var packages []scannedPackage
+	for _, provider := range sbom.Providers {
+		if fromFSScan && !provider.MatchesRecognizedFileNames(path) {
+			// Skip if filename is not usually a sbom file of this format.
+			// Only do this if this is being done in a filesystem scanning context, where we need to be
+			// careful about spending too much time attempting to parse unrelated files.
+			// If this is coming from an explicit scan argument, be more relaxed here since it's common for
+			// filenames to not conform to expected filename standards.
+			continue
+		}
+
+		// Opening file inside loop is OK, since providers is not very long,
+		// and it is unlikely that multiple providers accept the same file name
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+
+		ignoredCount := 0
+		err = provider.GetPackages(file, func(id sbom.Identifier) error {
+			_, err := models.PURLToPackage(id.PURL)
+			if err != nil {
+				ignoredCount++
+				//nolint:nilerr
+				return nil
+			}
+			packages = append(packages, scannedPackage{
+				PURL: id.PURL,
+			})
+
+			return nil
+		})
+		if err == nil {
+			// Found a parsable format.
+			if len(packages) == 0 {
+				// But no entries found, so maybe not the correct format
+				errs = append(errs, sbom.InvalidFormatError{
+					Msg: "no Package URLs found",
+					Errs: []error{
+						fmt.Errorf("scanned %s as %s SBOM, but failed to find any package URLs, this is required to scan SBOMs", path, provider.Name()),
+					},
+				})
+
+				continue
+			}
+			r.Infof(
+				"Scanned %s as %s SBOM and found %d %s\n",
+				path,
+				provider.Name(),
+				len(packages),
+				// output.Form(len(packages), "package", "packages"),
+			)
+			if ignoredCount > 0 {
+				r.Infof(
+					"Ignored %d %s with invalid PURLs\n",
+					ignoredCount,
+					// output.Form(ignoredCount, "package", "packages"),
+				)
+			}
+
+			return packages, nil
+		}
+
+		var formatErr sbom.InvalidFormatError
+		if errors.As(err, &formatErr) {
+			errs = append(errs, err)
+			continue
+		}
+
+		return nil, err
+	}
+
+	// Don't log these errors if we're coming from an FS scan, since it can get very noisy.
+	if !fromFSScan {
+		r.Infof("Failed to parse SBOM using all supported formats:\n")
+		for _, err := range errs {
+			r.Infof(err.Error() + "\n")
+		}
+	}
+
+	return packages, nil
+}
+
+type scannedPackage struct {
+	PURL      string
+	Name      string
+	Ecosystem lockfile.Ecosystem
+	Commit    string
+	Version   string
+	DepGroups []string
 }
