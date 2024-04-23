@@ -18,6 +18,7 @@ import (
 	"github.com/google/osv-scanner/pkg/osvscanner"
 	"github.com/google/osv-scanner/pkg/reporter"
 	"github.com/nics-tw/sbom2vans/internal/sbom"
+	"github.com/package-url/packageurl-go"
 	"github.com/pandatix/nvdapi/v2"
 	"github.com/spf13/cobra"
 )
@@ -25,11 +26,17 @@ import (
 func main() {
 
 	var SBOMInputPaths string
+	var VANSKey string
+	var OId string
+	var UnitName string
+	var vansData VANS
 
 	var rootCmd = &cobra.Command{
 		Use:   "sbom2vans",
 		Short: "A simple CLI tool",
 		Run: func(cmd *cobra.Command, args []string) {
+
+			vansData.APIKey = VANSKey
 
 			CVEs := getCPEFromSBOM(SBOMInputPaths)
 			r := &reporter.VoidReporter{}
@@ -37,22 +44,37 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			// print all packages
+
+			// save all packages to VANS data
+			// TODO: it might have some duplicate packages in CVE lists
 			for _, pkg := range pkgs {
-				fmt.Printf("Package: %s\n", pkg.PURL)
+
+				parsedPURL, err := packageurl.FromString(pkg.PURL)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				vansData.Data = append(vansData.Data, VANSItem{
+					OID:            OId,
+					UnitName:       UnitName,
+					AssetNumber:    "1",
+					ProductName:    pkg.PURL,
+					ProductVendor:  parsedPURL.Type,
+					ProductVersion: parsedPURL.Version,
+					Category:       "software",
+					CPE23:          "N/A",
+					ProductCPEName: pkg.PURL,
+				})
+
 			}
 
-			var vansData VANS
-			vansData.APIKey = ""
 			for _, cve := range CVEs {
-				// purl := packageurl.NewPackageURL(cve.Ecosystem, "", cve.Name, cve.Version, nil, "")
-				// fmt.Printf("CVE: %v, eco: %s, name: %s, ver: %s, cpe: %s, cpeName: %s\n", cve.CVE, cve.Ecosystem, cve.Name, cve.Version, cve.CPE, cve.ProductCPEName)
 
 				if cve.CPE != "" && cve.ProductCPEName != "" {
 					parts := strings.Split(cve.CPE, ":")
 					vansData.Data = append(vansData.Data, VANSItem{
-						OID:            "2.16.886.101.20007",
-						UnitName:       "監察院",
+						OID:            OId,
+						UnitName:       UnitName,
 						AssetNumber:    "1",
 						ProductName:    parts[4],
 						ProductVendor:  parts[3],
@@ -103,6 +125,9 @@ func main() {
 	}
 
 	rootCmd.Flags().StringVarP(&SBOMInputPaths, "input-file", "i", "", "Specify a SBOM file to scan")
+	rootCmd.Flags().StringVarP(&VANSKey, "vans-key", "k", "", "Specify VANS asset API key")
+	rootCmd.Flags().StringVarP(&OId, "oid", "", "", "Specify Object Identifier (OID)")
+	rootCmd.Flags().StringVarP(&UnitName, "unit-name", "u", "", "機關名稱，如：監察院")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
