@@ -87,15 +87,20 @@ func main() {
 
 			}
 
+			fmt.Println("OSV-Scanner 查詢有 CVE 紀錄套件：")
+			cvesJsonData, err := json.Marshal(CVEs)
+			fmt.Println(string(cvesJsonData))
+
 			// Marshal your struct into JSON
 			jsonData, err := json.Marshal(vansData)
-			fmt.Println(string(jsonData))
+			// fmt.Println(string(jsonData))
 
 			if err != nil {
 				fmt.Println("Error marshalling JSON:", err)
 				return
 			}
 
+			fmt.Println("上傳至 VANS 中...")
 			// Skip SSL verification as testing env
 			http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 			// Make a POST request
@@ -114,13 +119,8 @@ func main() {
 				return
 			}
 
-			// Print response status and body
-			fmt.Println("Response Status:", resp.Status)
-			fmt.Println("Response Body:", string(body))
-
-			if err != nil {
-				log.Fatal(err)
-			}
+			// Print response body
+			fmt.Println(string(body))
 
 		},
 	}
@@ -221,6 +221,7 @@ func getCPEFromSBOM(SBOMInputPaths string) []CVE {
 		SBOMInputPaths,
 	} // your real code
 
+	fmt.Println("開始掃描 SBOM 檔案...")
 	vulnResult, _ := osvscanner.DoScan(osvscanner.ScannerActions{
 		SBOMPaths: flagged,
 	}, nil)
