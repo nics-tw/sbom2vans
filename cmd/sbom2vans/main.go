@@ -33,7 +33,7 @@ func main() {
 
 	var rootCmd = &cobra.Command{
 		Use:   "sbom2vans",
-		Short: "A simple CLI tool",
+		Short: "SBOM 轉換為 VANS 機關資產管理 CLI 工具",
 		Run: func(cmd *cobra.Command, args []string) {
 
 			vansData.APIKey = VANSKey
@@ -99,6 +99,7 @@ func main() {
 			// Skip SSL verification as testing env
 			http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 			// Make a POST request
+			// TODO: Should know the VANS production API endpoint, and the testing endpoint should add as testing flag
 			resp, err := http.Post("https://vans.nat.gov.tw/rest/vans/InsertSystemUnitproduct", "application/json", bytes.NewBuffer(jsonData))
 			if err != nil {
 				fmt.Println("Error making POST request:", err)
@@ -124,9 +125,9 @@ func main() {
 		},
 	}
 
-	rootCmd.Flags().StringVarP(&SBOMInputPaths, "input-file", "i", "", "Specify a SBOM file to scan")
-	rootCmd.Flags().StringVarP(&VANSKey, "vans-key", "k", "", "Specify VANS asset API key")
-	rootCmd.Flags().StringVarP(&OId, "oid", "", "", "Specify Object Identifier (OID)")
+	rootCmd.Flags().StringVarP(&SBOMInputPaths, "input-file", "i", "", "指定 SBOM 檔案目錄位置")
+	rootCmd.Flags().StringVarP(&VANSKey, "vans-key", "k", "", "指定 VANS 機關資產管理 API key")
+	rootCmd.Flags().StringVarP(&OId, "oid", "", "", "機關 Object Identifier (OID)，可以至 OID 網站 https://oid.nat.gov.tw/OIDWeb/ 查詢")
 	rootCmd.Flags().StringVarP(&UnitName, "unit-name", "u", "", "機關名稱，如：監察院")
 
 	if err := rootCmd.Execute(); err != nil {
@@ -280,8 +281,6 @@ func getCPEFromSBOM(SBOMInputPaths string) []CVE {
 							splitCPE[5] = extractVersion(cve.Version)
 							cpeWithVersion := strings.Join(splitCPE, ":")
 							CVEs[i].CPE = cpeWithVersion
-							// print cpeWithVersion
-							// fmt.Printf("CPE with version: %s\n", cpeWithVersion)
 
 							resp, err := nvdapi.GetCPEs(client, nvdapi.GetCPEsParams{
 								CPEMatchString: ptr(cpeWithVersion),
