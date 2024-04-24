@@ -19,3 +19,7 @@
 
 # Go workspace file
 go.work
+
+# output binary name
+sbom2vans
+sbom2vans.*
