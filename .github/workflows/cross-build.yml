@@ -1,9 +1,13 @@
 name: Cross-Build
 
-on: [push]
-  
+on:
+  push:
+    branches:
+      - main
+
 jobs:
-  environment: build
+  environment: 
+    name: build
   build:
     strategy:
       fail-fast: false
