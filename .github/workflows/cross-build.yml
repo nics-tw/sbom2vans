@@ -5,9 +5,9 @@ on:
     branches:
       - main
 
+environment: production
+
 jobs:
-  environment: 
-    name: build
   build:
     strategy:
       fail-fast: false
