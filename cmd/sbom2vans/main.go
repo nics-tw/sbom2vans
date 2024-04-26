@@ -30,6 +30,7 @@ func main() {
 	var OId string
 	var UnitName string
 	var vansData VANS
+	NVDAPIKey := os.Getenv("NVD_API_KEY")
 
 	var rootCmd = &cobra.Command{
 		Use:   "sbom2vans",
@@ -38,7 +39,7 @@ func main() {
 
 			vansData.APIKey = VANSKey
 
-			CVEs := getCPEFromSBOM(SBOMInputPaths)
+			CVEs := getCPEFromSBOM(SBOMInputPaths, NVDAPIKey)
 			r := &reporter.VoidReporter{}
 			pkgs, err := scanSBOMFile(r, SBOMInputPaths, false)
 			if err != nil {
@@ -213,9 +214,8 @@ func extractPackageName(input string) string {
 }
 
 // get cpe from sbom
-func getCPEFromSBOM(SBOMInputPaths string) []CVE {
+func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 	var CVEs []CVE
-	apiKey := ""
 
 	flagged := []string{
 		SBOMInputPaths,
