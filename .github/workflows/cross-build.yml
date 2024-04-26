@@ -5,10 +5,10 @@ on:
     branches:
       - main
 
-environment: production
 
 jobs:
   build:
+    environment: production
     strategy:
       fail-fast: false
       matrix:
