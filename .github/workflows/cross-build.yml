@@ -1,0 +1,58 @@
+name: Cross-Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  environment: build
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: 
+          - 'linux'
+          - 'windows'
+          - 'darwin'
+        go: 
+          - '1.22'
+
+        include:
+        # Set the minimum Go patch version for the given Go minor
+        # Usable via ${{ matrix.GO_SEMVER }}
+        - go: '1.22'
+          GO_SEMVER: '~1.22.1'
+
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.GO_SEMVER }}
+          check-latest: true
+
+      - name: Print Go version and environment
+        id: vars
+        run: |
+          printf "Using go at: $(which go)\n"
+          printf "Go version: $(go version)\n"
+          printf "\n\nGo environment:\n\n"
+          go env
+          printf "\n\nSystem environment:\n\n"
+          env
+
+      - name: Run Build
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+          CGO_ENABLED: 0
+          GOOS: ${{ matrix.goos }}
+        shell: bash
+        continue-on-error: true
+        working-directory: ./cmd/sbom2vans
+        run: |
+          GOOS=$GOOS GOARCH=$GOARCH go build -o sbom2vans-"$GOOS"-$GOARCH 2> /dev/null
