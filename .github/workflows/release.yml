@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build:
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        goos:
+          - 'linux'
+          - 'windows'
+          - 'darwin'
+        goarch:
+          - 'amd64'
+          - 'arm64'
+        go:
+          - '1.22'
+
+        include:
+        # Set the minimum Go patch version for the given Go minor
+        # Usable via ${{ matrix.GO_SEMVER }}
+        - go: '1.22'
+          GO_SEMVER: '~1.22.1'
+
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Release
+        uses: wangyoucao577/go-release-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          goversion: "1.22"
+          project_path: "./cmd/sbom2vans"
+          binary_name: "sbom2vans"
