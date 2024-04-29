@@ -30,6 +30,7 @@ func main() {
 	var OId string
 	var UnitName string
 	var vansData VANS
+	const VANSEndpoint = "https://vans.nat.gov.tw/"
 	NVDAPIKey := os.Getenv("NVD_API_KEY")
 
 	var rootCmd = &cobra.Command{
@@ -106,7 +107,8 @@ func main() {
 			http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 			// Make a POST request
 			// TODO: Should know the VANS production API endpoint, and the testing endpoint should add as testing flag
-			resp, err := http.Post("https://vans.nat.gov.tw/rest/vans/InsertSystemUnitproduct", "application/json", bytes.NewBuffer(jsonData))
+			VANSAPIEndpoint := VANSEndpoint + "/rest/vans/InsertSystemUnitproduct"
+			resp, err := http.Post(VANSAPIEndpoint, "application/json", bytes.NewBuffer(jsonData))
 			if err != nil {
 				fmt.Println("Error making POST request:", err)
 				return
