@@ -110,7 +110,7 @@ func main() {
 
 			fmt.Println("上傳至 VANS 中...")
 			// Skip SSL verification as testing env
-			if os.Getenv("VANS_API_ENDPOINT") == "" {
+			if os.Getenv("VANS_API_ENDPOINT") != "" {
 				http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 			}
 			// Make a POST request
