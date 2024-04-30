@@ -11,7 +11,7 @@ jobs:
     permissions:
       packages: write
       contents: write
-    environment: ${{ contains('dev', github.ref) && 'develop' || 'production' }}
+    environment: ${{ contains(github.ref, 'dev') && 'develop' || 'production' }}
     strategy:
       fail-fast: false
       matrix:
