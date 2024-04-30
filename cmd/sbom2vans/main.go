@@ -30,8 +30,14 @@ func main() {
 	var OId string
 	var UnitName string
 	var vansData VANS
-	const VANSEndpoint = "https://vans.nat.gov.tw/"
+	var VANSEndpoint string
 	NVDAPIKey := os.Getenv("NVD_API_KEY")
+
+	if os.Getenv("VANS_API_ENDPOINT") == "" {
+		VANSEndpoint = "https://vans.testing.nat.gov.tw"
+	} else {
+		VANSEndpoint = os.Getenv("VANS_API_ENDPOINT")
+	}
 
 	var rootCmd = &cobra.Command{
 		Use:   "sbom2vans",
@@ -104,9 +110,10 @@ func main() {
 
 			fmt.Println("上傳至 VANS 中...")
 			// Skip SSL verification as testing env
-			http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			if os.Getenv("VANS_API_ENDPOINT") == "" {
+				http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			}
 			// Make a POST request
-			// TODO: Should know the VANS production API endpoint, and the testing endpoint should add as testing flag
 			VANSAPIEndpoint := VANSEndpoint + "/rest/vans/InsertSystemUnitproduct"
 			resp, err := http.Post(VANSAPIEndpoint, "application/json", bytes.NewBuffer(jsonData))
 			if err != nil {
