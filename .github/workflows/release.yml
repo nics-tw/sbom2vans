@@ -3,15 +3,15 @@ name: Release
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+-dev'
+      - 'v[0-9].[0-9]+.[0-9]+'
+      - 'v[0-9].[0-9]+.[0-9]+-dev'
 
 jobs:
   build:
     permissions:
       packages: write
       contents: write
-    environment: ${{ contains(fromJSON('dev'), github.ref) && 'develop' || 'production' }}
+    environment: ${{ contains('dev', github.ref) && 'develop' || 'production' }}
     strategy:
       fail-fast: false
       matrix:
