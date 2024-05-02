@@ -29,24 +29,18 @@ func main() {
 	var VANSKey string
 	var OId string
 	var UnitName string
-	var vansData VANS
+	var VANSData VANS
 	var VANSEndpoint string
-	NVDAPIKey := os.Getenv("NVD_API_KEY")
-
-	if os.Getenv("VANS_API_ENDPOINT") == "" {
-		VANSEndpoint = "https://vans.testing.nat.gov.tw"
-	} else {
-		VANSEndpoint = os.Getenv("VANS_API_ENDPOINT")
-	}
+	var NVDKey string
 
 	var rootCmd = &cobra.Command{
 		Use:   "sbom2vans",
 		Short: "SBOM 轉換為 VANS 機關資產管理 CLI 工具",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			vansData.APIKey = VANSKey
+			VANSData.APIKey = VANSKey
 
-			CVEs := getCPEFromSBOM(SBOMInputPaths, NVDAPIKey)
+			CVEs := getCPEFromSBOM(SBOMInputPaths, NVDKey)
 			r := &reporter.VoidReporter{}
 			pkgs, err := scanSBOMFile(r, SBOMInputPaths, false)
 			if err != nil {
@@ -62,7 +56,7 @@ func main() {
 					log.Fatal(err)
 				}
 
-				vansData.Data = append(vansData.Data, VANSItem{
+				VANSData.Data = append(VANSData.Data, VANSItem{
 					OID:            OId,
 					UnitName:       UnitName,
 					AssetNumber:    "1",
@@ -80,7 +74,7 @@ func main() {
 
 				if cve.CPE != "" && cve.ProductCPEName != "" {
 					parts := strings.Split(cve.CPE, ":")
-					vansData.Data = append(vansData.Data, VANSItem{
+					VANSData.Data = append(VANSData.Data, VANSItem{
 						OID:            OId,
 						UnitName:       UnitName,
 						AssetNumber:    "1",
@@ -100,7 +94,7 @@ func main() {
 			fmt.Println(string(cvesJsonData))
 
 			// Marshal your struct into JSON
-			jsonData, err := json.Marshal(vansData)
+			jsonData, err := json.Marshal(VANSData)
 			// fmt.Println(string(jsonData))
 
 			if err != nil {
@@ -110,7 +104,7 @@ func main() {
 
 			fmt.Println("上傳至 VANS 中...")
 			// Skip SSL verification as testing env
-			if os.Getenv("VANS_API_ENDPOINT") != "" {
+			if VANSEndpoint != "https://vans.nat.gov.tw" {
 				http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 			}
 			// Make a POST request
@@ -139,6 +133,8 @@ func main() {
 	rootCmd.Flags().StringVarP(&VANSKey, "vans-key", "k", "", "指定 VANS 機關資產管理 API key")
 	rootCmd.Flags().StringVarP(&OId, "oid", "", "", "機關 Object Identifier (OID)，可以至 OID 網站 https://oid.nat.gov.tw/OIDWeb/ 查詢")
 	rootCmd.Flags().StringVarP(&UnitName, "unit-name", "u", "", "機關名稱，如：監察院")
+	rootCmd.Flags().StringVarP(&VANSEndpoint, "vans-url", "", "https://vans.nat.gov.tw", "VANS API URL")
+	rootCmd.Flags().StringVarP(&NVDKey, "nvd-key", "", "", "指定 NVD API key")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
