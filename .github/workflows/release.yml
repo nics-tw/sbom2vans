@@ -11,7 +11,7 @@ jobs:
     permissions:
       packages: write
       contents: write
-    environment: ${{ contains(github.ref, 'dev') && 'develop' || 'production' }}
+    environment: production
     strategy:
       fail-fast: false
       matrix:
@@ -42,9 +42,6 @@ jobs:
 
       - name: Push binaries to Github Release Assets
         uses: wangyoucao577/go-release-action@v1
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-          VANS_API_ENDPOINT: ${{ secrets.VANS_API_ENDPOINT }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
