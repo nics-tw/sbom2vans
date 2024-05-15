@@ -56,18 +56,32 @@ func main() {
 					log.Fatal(err)
 				}
 
-				VANSData.Data = append(VANSData.Data, VANSItem{
-					OID:            OId,
-					UnitName:       UnitName,
-					AssetNumber:    "1",
-					ProductName:    pkg.PURL,
-					ProductVendor:  parsedPURL.Type,
-					ProductVersion: parsedPURL.Version,
-					Category:       "software",
-					CPE23:          "N/A",
-					ProductCPEName: pkg.PURL,
-				})
-
+				if parsedPURL.Version != "" {
+					VANSData.Data = append(VANSData.Data, VANSItem{
+						OID:            OId,
+						UnitName:       UnitName,
+						AssetNumber:    "1",
+						ProductName:    pkg.PURL,
+						ProductVendor:  parsedPURL.Type,
+						ProductVersion: parsedPURL.Version,
+						Category:       "software",
+						CPE23:          "N/A",
+						ProductCPEName: pkg.PURL,
+					})
+				} else {
+					// cyclone format might include the project name as package without version
+					VANSData.Data = append(VANSData.Data, VANSItem{
+						OID:            OId,
+						UnitName:       UnitName,
+						AssetNumber:    "1",
+						ProductName:    pkg.PURL,
+						ProductVendor:  parsedPURL.Type,
+						ProductVersion: "N/A",
+						Category:       "software",
+						CPE23:          "N/A",
+						ProductCPEName: pkg.PURL,
+					})
+				}
 			}
 
 			for _, cve := range CVEs {
@@ -95,6 +109,7 @@ func main() {
 
 			// Marshal your struct into JSON
 			jsonData, err := json.Marshal(VANSData)
+			// fmt.Println("上傳 VANS 套件 JSON：")
 			// fmt.Println(string(jsonData))
 
 			if err != nil {
