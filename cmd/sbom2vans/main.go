@@ -32,6 +32,7 @@ func main() {
 	var VANSData VANS
 	var VANSEndpoint string
 	var NVDKey string
+	var DebugMode bool
 
 	var rootCmd = &cobra.Command{
 		Use:   "sbom2vans",
@@ -109,8 +110,10 @@ func main() {
 
 			// Marshal your struct into JSON
 			jsonData, err := json.Marshal(VANSData)
-			// fmt.Println("上傳 VANS 套件 JSON：")
-			// fmt.Println(string(jsonData))
+			if DebugMode {
+				fmt.Println("上傳 VANS 套件 JSON：")
+				fmt.Println(string(jsonData))
+			}
 
 			if err != nil {
 				fmt.Println("Error marshalling JSON:", err)
@@ -150,6 +153,7 @@ func main() {
 	rootCmd.Flags().StringVarP(&UnitName, "unit-name", "u", "", "機關名稱，如：監察院")
 	rootCmd.Flags().StringVarP(&VANSEndpoint, "vans-url", "", "https://vans.nat.gov.tw", "VANS API URL")
 	rootCmd.Flags().StringVarP(&NVDKey, "nvd-key", "", "", "指定 NVD API key")
+	rootCmd.Flags().BoolVarP(&DebugMode, "debug", "", false, "debug mode")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
