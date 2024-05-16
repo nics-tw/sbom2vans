@@ -17,18 +17,16 @@ type cyclonedxType struct {
 	bomType cyclonedx.BOMFileFormat
 }
 
-var (
-	cycloneDXTypes = []cyclonedxType{
-		{
-			name:    "json",
-			bomType: cyclonedx.BOMFileFormatJSON,
-		},
-		{
-			name:    "xml",
-			bomType: cyclonedx.BOMFileFormatXML,
-		},
-	}
-)
+var cycloneDXTypes = []cyclonedxType{
+	{
+		name:    "json",
+		bomType: cyclonedx.BOMFileFormatJSON,
+	},
+	{
+		name:    "xml",
+		bomType: cyclonedx.BOMFileFormatXML,
+	},
+}
 
 func (c *CycloneDX) Name() string {
 	return "CycloneDX"
