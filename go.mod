@@ -14,7 +14,6 @@ require (
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	deps.dev/api/v3 v3.0.0-20240422054520-69d9307c7344 // indirect
-	deps.dev/api/v3alpha v0.0.0-20240422054520-69d9307c7344 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.0.0 // indirect
@@ -28,7 +27,6 @@ require (
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/go-git/go-git/v5 v5.12.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-containerregistry v0.19.1 // indirect
 	github.com/gorilla/schema v1.3.0 // indirect
 	github.com/ianlancetaylor/demangle v0.0.0-20240312041847-bd984b5ce465 // indirect
