@@ -223,10 +223,10 @@ func extractVersion(input string) string {
 }
 
 func extractPackageName(input string) string {
-	parts := strings.Split(input, "/")
-	if len(parts) == 0 {
+	if input == "" {
 		return ""
 	}
+	parts := strings.Split(input, "/")
 	lastPart := parts[len(parts)-1]
 	// Remove any version suffix if present
 	if strings.HasPrefix(lastPart, "v") && strings.Count(lastPart, ".") >= 2 {
