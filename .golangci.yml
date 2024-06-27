@@ -1,0 +1,121 @@
+linters:
+  disable-all: true
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - decorder
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - errcheck
+    - errname
+    - exhaustive
+    - exportloopref
+    - gci
+    - gofmt
+    - goimports
+    - gofumpt
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - importas
+    - misspell
+    - prealloc
+    - promlinter
+    - sloglint
+    - sqlclosecheck
+    - staticcheck
+    - tenv
+    - testableexamples
+    - testifylint
+    - tparallel
+    - typecheck
+    - unconvert
+    - unused
+    - wastedassign
+    - whitespace
+    - zerologlint
+  # these are implicitly disabled:
+  # - containedctx
+  # - contextcheck
+  # - cyclop
+  # - depguard
+  # - errchkjson
+  # - errorlint
+  # - exhaustruct
+  # - execinquery
+  # - exhaustruct
+  # - forbidigo
+  # - forcetypeassert
+  # - funlen
+  # - ginkgolinter
+  # - gocheckcompilerdirectives
+  # - gochecknoglobals
+  # - gochecknoinits
+  # - gochecksumtype
+  # - gocognit
+  # - goconst
+  # - gocritic
+  # - gocyclo
+  # - godot
+  # - godox
+  # - goerr113
+  # - goheader
+  # - gomnd
+  # - gomoddirectives
+  # - gomodguard
+  # - goprintffuncname
+  # - gosmopolitan
+  # - grouper
+  # - inamedparam
+  # - interfacebloat
+  # - ireturn
+  # - lll
+  # - loggercheck
+  # - maintidx
+  # - makezero
+  # - mirror
+  # - musttag
+  # - nakedret
+  # - nestif
+  # - nilerr
+  # - nilnil
+  # - nlreturn
+  # - noctx
+  # - nolintlint
+  # - nonamedreturns
+  # - nosprintfhostport
+  # - paralleltest
+  # - perfsprint
+  # - predeclared
+  # - protogetter
+  # - reassign
+  # - revive
+  # - rowserrcheck
+  # - stylecheck
+  # - tagalign
+  # - tagliatelle
+  # - testpackage
+  # - thelper
+  # - unparam
+  # - usestdlibvars
+  # - varnamelen
+  # - wrapcheck
+  # - wsl
+
+run:
+  # default concurrency is a available CPU number.
+  # concurrency: 4 # explicitly omit this value to fully utilize available resources.
+  deadline: 5m
+  issues-exit-code: 1
+  tests: false
+
+# output configuration options
+output:
+  formats: 'colored-line-number'
+  print-issued-lines: true
+  print-linter-name: true

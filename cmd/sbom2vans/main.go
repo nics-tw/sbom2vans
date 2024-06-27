@@ -24,7 +24,6 @@ import (
 )
 
 func main() {
-
 	var SBOMInputPaths string
 	var VANSKey string
 	var OId string
@@ -34,11 +33,10 @@ func main() {
 	var NVDKey string
 	var DebugMode bool
 
-	var rootCmd = &cobra.Command{
+	rootCmd := &cobra.Command{
 		Use:   "sbom2vans",
 		Short: "SBOM 轉換為 VANS 機關資產管理 CLI 工具",
 		Run: func(cmd *cobra.Command, args []string) {
-
 			VANSData.APIKey = VANSKey
 
 			CVEs := getCPEFromSBOM(SBOMInputPaths, NVDKey)
@@ -51,7 +49,6 @@ func main() {
 			// save all packages to VANS data
 			// TODO: it might have some duplicate packages in CVE lists
 			for _, pkg := range pkgs {
-
 				parsedPURL, err := packageurl.FromString(pkg.PURL)
 				if err != nil {
 					log.Fatal(err)
@@ -86,7 +83,6 @@ func main() {
 			}
 
 			for _, cve := range CVEs {
-
 				if cve.CPE != "" && cve.ProductCPEName != "" {
 					parts := strings.Split(cve.CPE, ":")
 					VANSData.Data = append(VANSData.Data, VANSItem{
@@ -101,12 +97,15 @@ func main() {
 						ProductCPEName: cve.ProductCPEName,
 					})
 				}
-
 			}
 
 			fmt.Println("OSV-Scanner 查詢有 CVE 紀錄套件：")
 			cvesJsonData, err := json.Marshal(CVEs)
 			fmt.Println(string(cvesJsonData))
+			if err != nil {
+				fmt.Println("Error OSV-Scanner CVE marshalling JSON:", err)
+				return
+			}
 
 			// Marshal your struct into JSON
 			jsonData, err := json.Marshal(VANSData)
@@ -121,13 +120,15 @@ func main() {
 			}
 
 			fmt.Println("上傳至 VANS 中...")
+
 			// Skip SSL verification as testing env
 			if VANSEndpoint != "https://vans.nat.gov.tw" {
-				http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+				http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402
 			}
 			// Make a POST request
 			VANSAPIEndpoint := VANSEndpoint + "/rest/vans/InsertSystemUnitproduct"
-			resp, err := http.Post(VANSAPIEndpoint, "application/json", bytes.NewBuffer(jsonData))
+			// As we might assign the testing env URL as variable, therefore add the ignore lint for G107
+			resp, err := http.Post(VANSAPIEndpoint, "application/json", bytes.NewBuffer(jsonData)) // #nosec G107
 			if err != nil {
 				fmt.Println("Error making POST request:", err)
 				return
@@ -143,7 +144,6 @@ func main() {
 
 			// Print response body
 			fmt.Println(string(body))
-
 		},
 	}
 
@@ -188,7 +188,6 @@ type VANSItem struct {
 }
 
 func isCVEExist(cves []CVE, cve string) bool {
-
 	for _, v := range cves {
 		for _, c := range v.CVE {
 			if c == cve {
@@ -201,7 +200,6 @@ func isCVEExist(cves []CVE, cve string) bool {
 }
 
 func isPackageExist(cves []CVE, name string) bool {
-
 	for _, v := range cves {
 		if v.Name == name {
 			return true
@@ -225,10 +223,10 @@ func extractVersion(input string) string {
 }
 
 func extractPackageName(input string) string {
-	parts := strings.Split(input, "/")
-	if len(parts) == 0 {
+	if input == "" {
 		return ""
 	}
+	parts := strings.Split(input, "/")
 	lastPart := parts[len(parts)-1]
 	// Remove any version suffix if present
 	if strings.HasPrefix(lastPart, "v") && strings.Count(lastPart, ".") >= 2 {
@@ -254,9 +252,7 @@ func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 	for _, vf := range vulnResult.Flatten() {
 		for _, alias := range vf.Vulnerability.Aliases {
 			if strings.HasPrefix(alias, "CVE") {
-
 				if !isCVEExist(CVEs, alias) {
-
 					if isPackageExist(CVEs, vf.Package.Name) {
 						// Find the package and add the CVE to the CVE array
 						for i, cve := range CVEs {
@@ -265,7 +261,6 @@ func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 							}
 						}
 					} else {
-
 						CVEs = append(CVEs, CVE{
 							Name:      vf.Package.Name,
 							Version:   vf.Package.Version,
@@ -287,7 +282,6 @@ func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 		resp, err := nvdapi.GetCVEs(client, nvdapi.GetCVEsParams{
 			CVEID: ptr(cve.CVE[0]),
 		})
-
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -300,7 +294,6 @@ func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 					// print all cpe_match
 					for _, cpe := range node.CPEMatch {
 						if strings.Contains(cpe.Criteria, extractPackageName(cve.Name)) {
-
 							// Split the CPE and replace the version
 							splitCPE := strings.Split(cpe.Criteria, ":")
 							splitCPE[5] = extractVersion(cve.Version)
@@ -310,7 +303,6 @@ func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 							resp, err := nvdapi.GetCPEs(client, nvdapi.GetCPEsParams{
 								CPEMatchString: ptr(cpeWithVersion),
 							})
-
 							if err != nil {
 								log.Fatal(err)
 							}
@@ -328,7 +320,6 @@ func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 				}
 			}
 		}
-
 	}
 	return CVEs
 }

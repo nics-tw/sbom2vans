@@ -1,0 +1,24 @@
+name: OSV-Scanner Scan
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # At 00:00 on Monday
+  # Change "main" to your default branch if you use a different name, i.e. "master"
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches: [main]
+  merge_group:
+    branches: [main]
+
+permissions:
+  # Require writing security events to upload SARIF file to security tab
+  security-events: write
+  # Only need to read contents
+  contents: read
+
+jobs:
+  scan-scheduled:
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.7.1"

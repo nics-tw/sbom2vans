@@ -19,12 +19,10 @@ type Reader interface {
 	GetPackages(r io.ReadSeeker, callback func(Identifier) error) error
 }
 
-var (
-	Providers = []Reader{
-		&SPDX{},
-		&CycloneDX{},
-	}
-)
+var Providers = []Reader{
+	&SPDX{},
+	&CycloneDX{},
+}
 
 type InvalidFormatError struct {
 	Msg  string

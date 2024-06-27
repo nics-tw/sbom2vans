@@ -13,30 +13,30 @@ import (
 	"github.com/spdx/tools-golang/tagvalue"
 )
 
-type SPDX struct{}
-type spdxLoader func(io.Reader) (*v2_3.Document, error)
+type (
+	SPDX       struct{}
+	spdxLoader func(io.Reader) (*v2_3.Document, error)
+)
 
 type loader struct {
 	name   string
 	loader spdxLoader
 }
 
-var (
-	spdxLoaders = []loader{
-		{
-			name:   "json",
-			loader: spdx_json.Read,
-		},
-		{
-			name:   "rdf",
-			loader: rdf.Read,
-		},
-		{
-			name:   "tv",
-			loader: tagvalue.Read,
-		},
-	}
-)
+var spdxLoaders = []loader{
+	{
+		name:   "json",
+		loader: spdx_json.Read,
+	},
+	{
+		name:   "rdf",
+		loader: rdf.Read,
+	},
+	{
+		name:   "tv",
+		loader: tagvalue.Read,
+	},
+}
 
 func (s *SPDX) Name() string {
 	return "SPDX"
