@@ -1,6 +1,6 @@
 module github.com/nics-tw/sbom2vans
 
-go 1.22.1
+go 1.22.4
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.8.0

@@ -1,4 +1,4 @@
-name: OSV-Scanner Scheduled Scan
+name: OSV-Scanner Scan
 
 on:
   schedule:
@@ -8,6 +8,10 @@ on:
     branches:
       - main
       - dev
+  pull_request:
+    branches: [main]
+  merge_group:
+    branches: [main]
 
 permissions:
   # Require writing security events to upload SARIF file to security tab
