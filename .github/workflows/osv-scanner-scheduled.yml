@@ -8,6 +8,9 @@ on:
     branches:
       - main
       - dev
+    paths-ignore:
+      - 'docs/**'
+      - '.github/**'
   pull_request:
     branches: [main]
   merge_group:
