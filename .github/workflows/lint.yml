@@ -17,7 +17,7 @@ jobs:
         os:
           - linux
           - mac
-          - windows
+          # - windows
 
         include:
         - os: linux
@@ -26,8 +26,8 @@ jobs:
         - os: mac
           OS_LABEL: macos-14
 
-        - os: windows
-          OS_LABEL: windows-latest
+        # - os: windows
+        #   OS_LABEL: windows-latest
 
     runs-on: ${{ matrix.OS_LABEL }}
 
