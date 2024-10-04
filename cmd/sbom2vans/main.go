@@ -203,7 +203,7 @@ func main() {
 
 	rootCmd.Flags().StringVarP(&SBOMInputPaths, "input-file", "i", "", "指定 SBOM 檔案目錄位置")
 	rootCmd.Flags().StringVarP(&VANSKey, "vans-key", "k", "", "指定 VANS 機關資產管理 API key")
-	rootCmd.Flags().StringVarP(&OId, "oid", "", "", "機關 Object Identifier (OID)，可以至 OID 網站 https://oid.nat.gov.tw/OIDWeb/ 查詢")
+	rootCmd.Flags().StringVarP(&OId, "oid", "o", "", "機關 Object Identifier (OID)，可以至 OID 網站 https://oid.nat.gov.tw/OIDWeb/ 查詢")
 	rootCmd.Flags().StringVarP(&UnitName, "unit-name", "u", "", "機關名稱，如：監察院")
 	rootCmd.Flags().StringVarP(&VANSEndpoint, "vans-url", "", "https://vans.nat.gov.tw", "VANS API URL")
 	rootCmd.Flags().StringVarP(&NVDKey, "nvd-key", "", "", "指定 NVD API key")
