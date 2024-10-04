@@ -33,10 +33,11 @@ func main() {
 	var UnitName string
 	var VANSEndpoint string
 	var NVDKey string
+	var AssetGroupCode string
 	var DebugMode bool
 	var VANSVersion int // 1 or 2
 	var VANSData VANS
-	var VANSV2Data VANSV2
+	VANSV2Data := VANSV2{Data: []VANSV2Item{}}
 	var VANSAPIEndpoint string
 
 	rootCmd := &cobra.Command{
@@ -56,7 +57,7 @@ func main() {
 			r := &reporter.VoidReporter{}
 			pkgs, err := scanSBOMFile(r, SBOMInputPaths, false)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal("SBOM Error: ", err)
 			}
 
 			// save all packages to VANS data
@@ -64,7 +65,11 @@ func main() {
 			for _, pkg := range pkgs {
 				parsedPURL, err := packageurl.FromString(pkg.PURL)
 				if err != nil {
-					log.Fatal(err)
+					log.Fatal("packageurl Error: ", err)
+				}
+
+				if isDuplicate(VANSV2Data.Data, pkg.PURL) {
+					continue
 				}
 
 				switch VANSVersion {
@@ -101,7 +106,7 @@ func main() {
 							OID:            OId,
 							OrgName:        UnitName,
 							Identifier:     getIdentifier(),
-							AssetGroupCode: "DEFAULT",
+							AssetGroupCode: AssetGroupCode,
 							AssetName:      pkg.PURL,
 							Brand:          parsedPURL.Type,
 							Version:        parsedPURL.Version,
@@ -114,7 +119,7 @@ func main() {
 							OID:            OId,
 							OrgName:        UnitName,
 							Identifier:     getIdentifier(),
-							AssetGroupCode: "DEFAULT",
+							AssetGroupCode: AssetGroupCode,
 							AssetName:      pkg.PURL,
 							Brand:          parsedPURL.Type,
 							Version:        "N/A",
@@ -142,11 +147,11 @@ func main() {
 							ProductCPEName: cve.ProductCPEName,
 						})
 					case 2:
-						VANSV2Data.Data = append(VANSV2Data.Data, VANSV2Item{
+						VANSV2Data.Data = replaceOrAppend(VANSV2Data.Data, VANSV2Item{
 							OID:            OId,
 							OrgName:        UnitName,
 							Identifier:     getIdentifier(),
-							AssetGroupCode: "DEFAULT",
+							AssetGroupCode: AssetGroupCode,
 							AssetName:      parts[4],
 							Brand:          parts[3],
 							Version:        parts[5],
@@ -202,6 +207,7 @@ func main() {
 	rootCmd.Flags().StringVarP(&UnitName, "unit-name", "u", "", "機關名稱，如：監察院")
 	rootCmd.Flags().StringVarP(&VANSEndpoint, "vans-url", "", "https://vans.nat.gov.tw", "VANS API URL")
 	rootCmd.Flags().StringVarP(&NVDKey, "nvd-key", "", "", "指定 NVD API key")
+	rootCmd.Flags().StringVarP(&AssetGroupCode, "group", "g", "DEFAULT", "指定資產群組代碼")
 	rootCmd.Flags().IntVarP(&VANSVersion, "vans-version", "", 2, "指定 VANS 版本（1 或 2）")
 	rootCmd.Flags().BoolVarP(&DebugMode, "debug", "", false, "debug mode")
 
@@ -366,13 +372,14 @@ func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 	for i, cve := range CVEs {
 		client, err := nvdapi.NewNVDClient(&http.Client{}, apiKey)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("NVDClient Error: ", err)
 		}
 		resp, err := nvdapi.GetCVEs(client, nvdapi.GetCVEsParams{
 			CVEID: ptr(cve.CVE[0]),
 		})
 		if err != nil {
-			log.Fatal(err)
+			// Maybe api key is invalid
+			log.Fatal("NVDClient Error: ", err, " Please check if the NVD API key is valid.")
 		}
 
 		// Only request per CVE for each request, therefore, the first element is the only one
@@ -393,7 +400,7 @@ func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 								CPEMatchString: ptr(cpeWithVersion),
 							})
 							if err != nil {
-								log.Fatal(err)
+								log.Fatal("NVDClient Error: ", err)
 							}
 
 							// Get CPE titles as VANS request product_cpename column
@@ -511,7 +518,7 @@ type scannedPackage struct {
 func getIdentifier() string { // get mac address and hash with sha256
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("MAC Address Error:", err)
 	}
 
 	var macAddress string
@@ -531,4 +538,23 @@ func getIdentifier() string { // get mac address and hash with sha256
 	hash := sha256.Sum256([]byte(macAddress))
 	sha256String := hex.EncodeToString(hash[:])
 	return sha256String
+}
+
+func isDuplicate(data []VANSV2Item, assetName string) bool {
+	for _, item := range data {
+		if item.AssetName == assetName {
+			return true
+		}
+	}
+	return false
+}
+
+func replaceOrAppend(data []VANSV2Item, newData VANSV2Item) []VANSV2Item {
+	for i, item := range data {
+		if item.AssetName == newData.AssetName {
+			data[i] = newData
+			return data
+		}
+	}
+	return append(data, newData)
 }
