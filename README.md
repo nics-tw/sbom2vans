@@ -89,7 +89,7 @@ sbom2vans 能夠確保 SBOM 文件符合 VANS 格式的要求，有助於機構�
 ## sbom2vans 使用環境說明
 
 - 存取外部網路功能(此轉換工具需連線至 OSV、NVD 及 VANS API)
-- VANS 機關資產管理 API key。若無 VANS API key，請參考[資通安全弱點通報系統](https://download.nics.nat.gov.tw/UploadFile/vans/%E8%B3%87%E9%80%9A%E5%AE%89%E5%85%A8%E5%BC%B1%E9%BB%9E%E9%80%9A%E5%A0%B1%E7%B3%BB%E7%B5%B1(VANS%E7%B3%BB%E7%B5%B1)%E5%B8%B3%E8%99%9F%E7%94%B3%E8%AB%8B%E8%AA%AA%E6%98%8E%E6%96%87%E4%BB%B6_v1.3_1111222.pdf)申請帳號及[政府機關資安弱點通報系統操作](https://download.nics.nat.gov.tw/UploadFile/vans/%E8%B3%87%E9%80%9A%E5%AE%89%E5%85%A8%E5%BC%B1%E9%BB%9E%E9%80%9A%E5%A0%B1%E7%B3%BB%E7%B5%B1%E6%93%8D%E4%BD%9C%E8%AA%AA%E6%98%8Ev1.0_1100610.pdf)申請 API key
+- VANS 機關資產管理 API key。若無 VANS API key，請參考[資通安全弱點通報系統](https://download.nics.nat.gov.tw/UploadFile/vans/%E6%96%B0%E7%89%88%E8%B3%87%E9%80%9A%E5%AE%89%E5%85%A8%E5%BC%B1%E9%BB%9E%E9%80%9A%E5%A0%B1%E7%B3%BB%E7%B5%B1(VANS%202.0)%E7%B7%9A%E4%B8%8A%E8%AA%AA%E6%98%8E%E6%9C%83.pdf)申請帳號及申請 API key
 - SBOM 文件（支援 CycloneDX 或 SPDX 格式）。若無 SBOM 文件，請參考[SBOM 開源工具使用說明](https://download.nics.nat.gov.tw/UploadFile/attachfilenew/SBOM%E9%96%8B%E6%BA%90%E5%B7%A5%E5%85%B7%E4%BD%BF%E7%94%A8%E8%AA%AA%E6%98%8E_v4.2.pdf)進行掃描取得 SBOM 文件。
 - NVD API key。若無 NVD API Key，請參考《附錄：申請 NVD API Key 步驟》。
 
@@ -172,8 +172,9 @@ Flags:
   -h, --help help for sbom2vans
   -i, --input-file string 指定 SBOM 檔案目錄位置
   --nvd-key string 指定 NVD API key
-  --oid string 機關 Object Identifier (OID)，可以至 OID 網站 https://oid.nat.gov.tw/OIDWeb/ 查詢
+  -o, --oid string 機關 Object Identifier (OID)，可以至 OID 網站 https://oid.nat.gov.tw/OIDWeb/ 查詢
   -u, --unit-name string 機關名稱，如：監察院
+  -g, --group string 指定資產群組代碼
   -k, --vans-key string 指定 VANS 機關資產管理 API key
       --vans-url string VANS API URL (default "https://vans.nat.gov.tw")
 ```
@@ -184,7 +185,7 @@ Flags:
 - `-o`, `--oid`：機關 OID
 - `-i`：SBOM 文件路徑
 - `-g`, `--group`：指定資產群組代碼
-- `-k`, `--vans-key`：VANS API key
+- `-k`, `--vans-key`：[VANS API key](#sbom2vans-%E4%BD%BF%E7%94%A8%E7%92%B0%E5%A2%83%E8%AA%AA%E6%98%8E)
 - `--vans-url`：預設為 VANS 正式環境 URL，可自定義測試 URL
 - `--nvd-key`：指定 NVD API key
 
@@ -218,11 +219,22 @@ Flags:
 
 3. 執行 sbom2vans 工具。
 
+cmd
 ```
-> .\sbom2vans.exe -u "監察院" --oid 2.16.886.101.20007 -i
-.\test-sbom\manifest\spdx\_2.2\manifest.spdx.json -k
-"l62RiXYJkIVT...請至 VANS 申請 API KEY...0cWPhcg1E" --nvd-key
-"65xxxxxx-12ab-cd45-ef78-xxxxxxxxxx31"
+> .\sbom2vans.exe -u "監察院" --oid 2.16.886.101.20007 ^
+-i .\test-sbom\manifest\spdx\_2.2\manifest.spdx.json ^
+-g "test-project" ^
+-k "l62RiXYJkIVT...請至 VANS 申請 API KEY...0cWPhcg1E" ^
+--nvd-key "65xxxxxx-12ab-cd45-ef78-xxxxxxxxxx31"
+```
+
+PowerShell
+```
+> .\sbom2vans.exe -u "監察院" --oid 2.16.886.101.20007 `
+-i .\test-sbom\manifest\spdx\_2.2\manifest.spdx.json `
+-g "test-project" `
+-k "l62RiXYJkIVT...請至 VANS 申請 API KEY...0cWPhcg1E" `
+--nvd-key "65xxxxxx-12ab-cd45-ef78-xxxxxxxxxx31"
 ```
 
 #### （二）macOS 環境或 Linux 環境
