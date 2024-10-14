@@ -18,7 +18,7 @@ NVD 是美國政府的標準基礎漏洞管理資料庫，使用安全內容自�
 
 VANS 結合資訊資產管理與弱點管理，掌握整體風險情勢，並協助機關落實資通安全管理法之資產盤點與風險評估應辦事項。此工具使用 VANS 資訊資產 API 進行上傳，參數說明詳見下圖（來源 VANS 系統API 功能說明）。
 
-![圖一：VANS 資訊資產 API 參數說明](./img/vans_api.png)
+![VANS 資訊資產 API 參數說明](./img/vans_api.png)
 
 ### sbom2vans
 
@@ -50,7 +50,7 @@ VANS 結合資訊資產管理與弱點管理，掌握整體風險情勢，並協
 
 ### 一、流程說明
 
-![圖二：sbom2vans 工具流程圖](./img/sbom2vans-activity-diagram.png)
+![sbom2vans 工具流程圖](./img/sbom2vans-activity-diagram.png)
 
 1. 讀取 SBOM 檔案(支援 OWASP CycloneDX 及 SPDX)兩種格式，於 GitHub `/test` 目錄提供 [CycloneDX 格式測試檔案](./test/cyclonedx.json) 及 [SPDX 格式測試檔案](./test/spdx.json)。
 2. 查詢 OSV 是否有 CVE 漏洞
@@ -80,7 +80,7 @@ VANS 結合資訊資產管理與弱點管理，掌握整體風險情勢，並協
 依據「SBOM 轉換 CPE 格式應用於 VANS 之銜接機制」段落，sbom2van 先經查詢開源 OSV 資料庫取得具有 CVE 漏洞函式庫元件，可以彌補 VANS 使用 NVD 資料庫而尚未有 CVE 資訊，將具有 CVE
 漏洞之函式庫元件輸出顯示於終端機，同時上傳由 SBOM 格式資料轉換資產盤點資料至 VANS 系統。
 
-![圖三：Windows 環境執行 sbom2vans 工具](./img/sbom2vans_windows.jpg)
+![Windows 環境執行 sbom2vans 工具](./img/sbom2vans_windows.jpg)
 
 ## 使用效益
 
@@ -98,7 +98,7 @@ sbom2vans 能夠確保 SBOM 文件符合 VANS 格式的要求，有助於機構�
 #### (一) Windows 環境
 
 1. 搜尋並開啟「命令提示字元」。
-    ![圖四：搜尋命令提示字元應用程式](./img/search_cmd.png)
+    ![搜尋命令提示字元應用程式](./img/search_cmd.png)
 
 2. 於命令提示字元，輸入以下命令。回傳顯示則為環境使用的 CPU 架構，AMD64 代表 64 bit CPU 架構。
 
@@ -106,22 +106,22 @@ sbom2vans 能夠確保 SBOM 文件符合 VANS 格式的要求，有助於機構�
     > echo %PROCESSOR_ARCHITECTURE%
     ```
 
-    ![圖五：Windows 環境檢視 CPU 架構](./img/cmd_arch.png)
+    ![Windows 環境檢視 CPU 架構](./img/cmd_arch.png)
 
 #### (二) macOS 或 Linux 環境
 
 1. 開啟終端機(Terminal)應用程式
-2. 使用以下 uname 命令。詳見圖六為 macOS 環境取得 arm64 代表使用 Arm 架構 64 bit，圖七為 Linux 環境取得 `x86_64` 代表使用 AMD 架構 64 bit。
+2. 使用以下 uname 命令。如下圖，macOS 環境取得 arm64 代表使用 Arm 架構 64 bit，Linux 環境取得 `x86_64` 代表使用 AMD 架構 64 bit。
 
     ```
     uname -m
     ```
 
     macOS 環境檢視 CPU 架構
-    ![圖六：macOS 環境檢視 CPU 架構](./img/macos_arch.png)
+    ![macOS 環境檢視 CPU 架構](./img/macos_arch.png)
 
     Linux 環境檢視 CPU 架構
-    ![圖七：Linux 環境檢視 CPU 架構](./img/linux_arch.png)
+    ![Linux 環境檢視 CPU 架構](./img/linux_arch.png)
 
 ### 二、下載 sbom2vans 工具
 
@@ -137,7 +137,7 @@ sbom2vans 能夠確保 SBOM 文件符合 VANS 格式的要求，有助於機構�
     - 作業系統環境：Linux
     - CPU 架構：`x86_64`
 
-    ![圖八：GitHub sbom2vans release 頁面](./img/release.png)
+    ![GitHub sbom2vans release 頁面](./img/release.png)
 
 2. 依據前一段落(一、檢視環境 CPU 架構)取得 CPU 架構，依據執行環境的作業系統點選下載。以下舉例環境、CPU 架構及下載 sbom2vans 檔名：
 
@@ -148,12 +148,11 @@ sbom2vans 能夠確保 SBOM 文件符合 VANS 格式的要求，有助於機構�
 3. 解壓縮上一步驟下載檔案，則可以取得 sbom2vans 工具。
 
     - macOS 或 Linux 環境：使用以下 tar 命令解壓縮。
-
         ```
         tar zxvf ./sbom2vans-v0.0.1-darwin-arm64.tar.gz
         ```
 
-        ![圖九：使用 tar 命令解壓縮](./img/tar.png)
+        ![使用 tar 命令解壓縮](./img/tar.png)
 
     - Windows 則可以使用內建 zip 解壓縮或是 WinRAR 進行解壓縮檔案。
 
@@ -194,16 +193,16 @@ Flags:
 需事先於 vans 系統新增資產群組，自定義資產群組代碼，以方便後續管理不同系統之 SBOM。
 
 新增資產群組
-![圖十：新增資產群組](./img/vans_create_assetgroup1.png)
+![新增資產群組](./img/vans_create_assetgroup1.png)
 
 設定資產群組代碼
-![圖十一：設定資產群組代碼](./img/vans_create_assetgroup2.png)
+![設定資產群組代碼](./img/vans_create_assetgroup2.png)
 
 #### (一) Windows 環境
 
-1. 開啟 Windows PowerShell，詳見圖十。
+1. 開啟 Windows PowerShell。
 
-    ![圖十：搜尋 Windows PowerShell 應用程式](./img/search_powershell.png)
+    ![搜尋 Windows PowerShell 應用程式](./img/search_powershell.png)
 
 2. 切換至下載 sbom2vans 目錄。以下範例為切換至  `C:\Users\maowang\Documents\sbom2vans\`。
 
@@ -215,27 +214,27 @@ Flags:
     > cd C:\Users\maowang\Documents\sbom2vans\
     ```
 
-    ![圖十一：Windows PowerShell 切換目錄](./img/cd_powershell.png)
+    ![Windows PowerShell 切換目錄](./img/cd_powershell.png)
 
 3. 執行 sbom2vans 工具。
 
-cmd
-```
-> .\sbom2vans.exe -u "監察院" --oid 2.16.886.101.20007 ^
--i .\test-sbom\manifest\spdx\_2.2\manifest.spdx.json ^
--g "test-project" ^
--k "l62RiXYJkIVT...請至 VANS 申請 API KEY...0cWPhcg1E" ^
---nvd-key "65xxxxxx-12ab-cd45-ef78-xxxxxxxxxx31"
-```
+    cmd
+    ```
+    > .\sbom2vans.exe -u "監察院" --oid 2.16.886.101.20007 ^
+    -i .\test-sbom\manifest\spdx\_2.2\manifest.spdx.json ^
+    -g "test-project" ^
+    -k "l62RiXYJkIVT...請至 VANS 申請 API KEY...0cWPhcg1E" ^
+    --nvd-key "65xxxxxx-12ab-cd45-ef78-xxxxxxxxxx31"
+    ```
 
-PowerShell
-```
-> .\sbom2vans.exe -u "監察院" --oid 2.16.886.101.20007 `
--i .\test-sbom\manifest\spdx\_2.2\manifest.spdx.json `
--g "test-project" `
--k "l62RiXYJkIVT...請至 VANS 申請 API KEY...0cWPhcg1E" `
---nvd-key "65xxxxxx-12ab-cd45-ef78-xxxxxxxxxx31"
-```
+    PowerShell
+    ```
+    > .\sbom2vans.exe -u "監察院" --oid 2.16.886.101.20007 `
+    -i .\test-sbom\manifest\spdx\_2.2\manifest.spdx.json `
+    -g "test-project" `
+    -k "l62RiXYJkIVT...請至 VANS 申請 API KEY...0cWPhcg1E" `
+    --nvd-key "65xxxxxx-12ab-cd45-ef78-xxxxxxxxxx31"
+    ```
 
 #### （二）macOS 環境或 Linux 環境
 
@@ -250,7 +249,9 @@ PowerShell
     $ cd ~/Project/vans-testing
     ```
 
-3. 執行 sbom2vans 工具，指令如下。附註：於 macOS 作業環境第一次執行時，可能會遭遇到安全性問題，詳見圖十三，請參考下方《macOS 作業系統允許內建 Gatekeeper 第三方應用程式執行》步驟。
+3. 執行 sbom2vans 工具，指令如下。
+
+   附註：於 macOS 作業環境第一次執行時，可能會遭遇到安全性問題，請參考下方《macOS 作業系統允許內建 Gatekeeper 第三方應用程式執行》步驟。
 
     ```
     $ ./sbom2vans -u "監察院" --oid 2.16.886.101.20007 \
@@ -258,20 +259,16 @@ PowerShell
     -g "test-project" \
     --vans-key "l62RiXYJkIVT...請至 VANS 使用...0cWPhcg1E" \
     --nvd-key "65xxxxxx-12ab-cd45-ef78-xxxxxxxxxx31"
-    開始掃描 SBOM 檔案...
-    OSV-Scanner 查詢有 CVE 紀錄套件：
-    [{"name":"github.com/dgrijalva/jwt-go","version":"v3.2.0+incompatible","ecosystem":"Go","cve":["CVE-2020-26160"],"cpe":"cpe:2.3:a:jwt-go_project:jwt-go:3.2.0:*:*:*:*:*:*:*","product_cpename":"Jwt-go Project Jwt-go 3.2.0"},{"name":"golang.org/x/net","version":"v0.10.0","ecosystem":"Go","cve":["CVE-2023-3978","CVE-2023-39325","CVE-2023-44487","CVE-2023-45288"],"cpe":"cpe:2.3:a:golang:networking:0.10.0:*:*:*:*:go:*:*","product_cpename":"Golang Networking (net) 0.10.0 for Go"},{"name":"google.golang.org/protobuf","version":"v1.30.0","ecosystem":"Go","cve":["CVE-2024-24786"],"cpe":"","product_cpename":""},{"name":"follow-redirects","version":"1.15.5","ecosystem":"npm","cve":["CVE-2024-28849"],"cpe":"","product_cpename":""},{"name":"github.com/jackc/pgx/v5","version":"v5.5.0","ecosystem":"Go","cve":["CVE-2024-27304"],"cpe":"","product_cpename":""},{"name":"vite","version":"5.0.12","ecosystem":"npm","cve":["CVE-2024-31207"],"cpe":"","product_cpename":""},{"name":"golang.org/x/crypto","version":"v0.16.0","ecosystem":"Go","cve":["CVE-2023-48795"],"cpe":"cpe:2.3:a:golang:crypto:0.16.0:*:*:*:*:*:*:*","product_cpename":""}]
-    上傳至 VANS 中...
-    {"Message":"A-S-0101","Describe":"資料正確，系統解析清單中，完成後將會寄發郵件通知"}
+
     ```
-
-    macOS 執行 sbom2vans 安全性提示
-
-    <img src="./img/macos_malicious_alert.png" alt="macOS 執行 sbom2vans 安全性提示" width="300">
 
 #### （三）macOS 作業系統允許內建 Gatekeeper 第三方應用程式執行
 
-若遭遇圖十三狀況，請使用以下 spctl 命令允許第三方應用程式執行。
+macOS 執行 sbom2vans 安全性提示
+
+<img src="./img/macos_malicious_alert.png" alt="macOS 執行 sbom2vans 安全性提示" width="300">
+
+若遭遇上圖狀況，請使用以下 spctl 命令允許第三方應用程式執行。
 
 ```
 sudo spctl --master-disable
@@ -297,19 +294,19 @@ macOS/Linux 使用參數範例：
 
 ### 四、VANS 檢視上傳資料
 
-至 VANS 系統上「資產管理 -> 資通系統資產」檢視上傳資料，詳見圖十四。
+至 VANS 系統上「資產管理 -> 資通系統資產」檢視上傳資料。
 
-![圖十四：VANS 資通系統資產列表畫面](./img/vans_assetlist.png)
+![VANS 資通系統資產列表畫面](./img/vans_assetlist.png)
 
 ## 附錄一：申請 NVD API Key 步驟
 
-1. 請至 [NVD Request an API Key](https://nvd.nist.gov/developers/request-an-api-key) 頁面。填寫 Organization 名稱、Email 及 Organization 類型，詳見圖十五。
+1. 請至 [NVD Request an API Key](https://nvd.nist.gov/developers/request-an-api-key) 頁面。填寫 Organization 名稱、Email 及 Organization 類型。
 
-    ![圖十五：NVD 申請 API Key 畫面](./img/nvd_request_api_key.png)
+    ![NVD 申請 API Key 畫面](./img/nvd_request_api_key.png)
 
-2. 申請通過後，則會於上述您填寫的 Email 收到 NVD API Key 的連結，詳見圖十六。
+2. 申請通過後，則會於上述您填寫的 Email 收到 NVD API Key 的連結。
 
-    ![圖十六：NVD 寄送 API Key 信件截圖](./img/nvd_receive_mail.png)
+    ![NVD 寄送 API Key 信件截圖](./img/nvd_receive_mail.png)
 
 3. 打開第二步驟信件內連結，啟用 NVD API key。內文如下範例，其 API KEY 為 sbom2vans 工具NVD API key 參數。
 
