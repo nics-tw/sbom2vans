@@ -33,19 +33,34 @@ jobs:
 
     runs-on: ubuntu-latest
     continue-on-error: true
+    env:
+      FILENAME: sbom2vans
+      SRC_DIR: ./cmd/sbom2vans
+      RELEASE_TAG: ${{ github.ref_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Release
-        uses: softprops/action-gh-release@v2
-
-      - name: Push binaries to Github Release Assets
-        uses: wangyoucao577/go-release-action@v1
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          goos: ${{ matrix.goos }}
-          goarch: ${{ matrix.goarch }}
-          goversion: "1.22"
-          project_path: "./cmd/sbom2vans"
-          binary_name: "sbom2vans"
+          go-version: ${{ matrix.go }}
+          go-version-patch: ${{ matrix.GO_SEMVER }}
+
+      - name: Build and Compress Binary
+        run: |
+          # binary suffix
+          EXT=''
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            EXT='.exe'
+          fi
+
+          # Build the binary with a fixed filename
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ${{ env.FILENAME }}$EXT ${{ env.SRC_DIR }}
+
+          # Compress the binary based on the OS
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip -vr ${{ env.FILENAME }}-${{ RELEASE_TAG }}-${{ matrix.goos }}-${{ matrix.goarch }}.zip ${{ env.FILENAME }}$EXT
+          else
+            tar cvfz ${{ env.FILENAME }}-${{ RELEASE_TAG }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz ${{ env.FILENAME }}$EXT
+          fi
