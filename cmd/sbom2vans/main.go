@@ -2,12 +2,15 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -28,22 +31,33 @@ func main() {
 	var VANSKey string
 	var OId string
 	var UnitName string
-	var VANSData VANS
 	var VANSEndpoint string
 	var NVDKey string
+	var AssetGroupCode string
 	var DebugMode bool
+	var VANSVersion int // 1 or 2
+	var VANSData VANS
+	VANSV2Data := VANSV2{Data: []VANSV2Item{}}
+	var VANSAPIEndpoint string
 
 	rootCmd := &cobra.Command{
 		Use:   "sbom2vans",
 		Short: "SBOM 轉換為 VANS 機關資產管理 CLI 工具",
 		Run: func(cmd *cobra.Command, args []string) {
-			VANSData.APIKey = VANSKey
+			switch VANSVersion {
+			case 1:
+				VANSData.APIKey = VANSKey
+				VANSAPIEndpoint = VANSEndpoint + "/rest/vans/InsertSystemUnitproduct"
+			case 2:
+				VANSV2Data.APIKey = VANSKey
+				VANSAPIEndpoint = VANSEndpoint + "/vans2/asset/InsertServerUnitproduct"
+			}
 
 			CVEs := getCPEFromSBOM(SBOMInputPaths, NVDKey)
 			r := &reporter.VoidReporter{}
 			pkgs, err := scanSBOMFile(r, SBOMInputPaths, false)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal("SBOM Error: ", err)
 			}
 
 			// save all packages to VANS data
@@ -51,51 +65,100 @@ func main() {
 			for _, pkg := range pkgs {
 				parsedPURL, err := packageurl.FromString(pkg.PURL)
 				if err != nil {
-					log.Fatal(err)
+					log.Fatal("packageurl Error: ", err)
 				}
 
-				if parsedPURL.Version != "" {
-					VANSData.Data = append(VANSData.Data, VANSItem{
-						OID:            OId,
-						UnitName:       UnitName,
-						AssetNumber:    "1",
-						ProductName:    pkg.PURL,
-						ProductVendor:  parsedPURL.Type,
-						ProductVersion: parsedPURL.Version,
-						Category:       "software",
-						CPE23:          "N/A",
-						ProductCPEName: pkg.PURL,
-					})
-				} else {
-					// cyclone format might include the project name as package without version
-					VANSData.Data = append(VANSData.Data, VANSItem{
-						OID:            OId,
-						UnitName:       UnitName,
-						AssetNumber:    "1",
-						ProductName:    pkg.PURL,
-						ProductVendor:  parsedPURL.Type,
-						ProductVersion: "N/A",
-						Category:       "software",
-						CPE23:          "N/A",
-						ProductCPEName: pkg.PURL,
-					})
+				if isDuplicate(VANSV2Data.Data, pkg.PURL) {
+					continue
+				}
+
+				switch VANSVersion {
+				case 1:
+					if parsedPURL.Version != "" {
+						VANSData.Data = append(VANSData.Data, VANSItem{
+							OID:            OId,
+							UnitName:       UnitName,
+							AssetNumber:    "1",
+							ProductName:    pkg.PURL,
+							ProductVendor:  parsedPURL.Type,
+							ProductVersion: parsedPURL.Version,
+							Category:       "software",
+							CPE23:          "N/A",
+							ProductCPEName: pkg.PURL,
+						})
+					} else {
+						// cyclone format might include the project name as package without version
+						VANSData.Data = append(VANSData.Data, VANSItem{
+							OID:            OId,
+							UnitName:       UnitName,
+							AssetNumber:    "1",
+							ProductName:    pkg.PURL,
+							ProductVendor:  parsedPURL.Type,
+							ProductVersion: "N/A",
+							Category:       "software",
+							CPE23:          "N/A",
+							ProductCPEName: pkg.PURL,
+						})
+					}
+				case 2:
+					if parsedPURL.Version != "" {
+						VANSV2Data.Data = append(VANSV2Data.Data, VANSV2Item{
+							OID:            OId,
+							OrgName:        UnitName,
+							Identifier:     getIdentifier(),
+							AssetGroupCode: AssetGroupCode,
+							AssetName:      pkg.PURL,
+							Brand:          parsedPURL.Type,
+							Version:        parsedPURL.Version,
+							CPE:            "N/A",
+							CPEName:        "N/A",
+						})
+					} else {
+						// cyclone format might include the project name as package without version
+						VANSV2Data.Data = append(VANSV2Data.Data, VANSV2Item{
+							OID:            OId,
+							OrgName:        UnitName,
+							Identifier:     getIdentifier(),
+							AssetGroupCode: AssetGroupCode,
+							AssetName:      pkg.PURL,
+							Brand:          parsedPURL.Type,
+							Version:        "N/A",
+							CPE:            "N/A",
+							CPEName:        "N/A",
+						})
+					}
 				}
 			}
 
 			for _, cve := range CVEs {
 				if cve.CPE != "" && cve.ProductCPEName != "" {
 					parts := strings.Split(cve.CPE, ":")
-					VANSData.Data = append(VANSData.Data, VANSItem{
-						OID:            OId,
-						UnitName:       UnitName,
-						AssetNumber:    "1",
-						ProductName:    parts[4],
-						ProductVendor:  parts[3],
-						ProductVersion: parts[5],
-						Category:       "software",
-						CPE23:          cve.CPE,
-						ProductCPEName: cve.ProductCPEName,
-					})
+					switch VANSVersion {
+					case 1:
+						VANSData.Data = append(VANSData.Data, VANSItem{
+							OID:            OId,
+							UnitName:       UnitName,
+							AssetNumber:    "1",
+							ProductName:    parts[4],
+							ProductVendor:  parts[3],
+							ProductVersion: parts[5],
+							Category:       "software",
+							CPE23:          cve.CPE,
+							ProductCPEName: cve.ProductCPEName,
+						})
+					case 2:
+						VANSV2Data.Data = replaceOrAppend(VANSV2Data.Data, VANSV2Item{
+							OID:            OId,
+							OrgName:        UnitName,
+							Identifier:     getIdentifier(),
+							AssetGroupCode: AssetGroupCode,
+							AssetName:      parts[4],
+							Brand:          parts[3],
+							Version:        parts[5],
+							CPE:            cve.CPE,
+							CPEName:        cve.ProductCPEName,
+						})
+					}
 				}
 			}
 
@@ -107,52 +170,45 @@ func main() {
 				return
 			}
 
-			// Marshal your struct into JSON
-			jsonData, err := json.Marshal(VANSData)
-			if DebugMode {
-				fmt.Println("上傳 VANS 套件 JSON：")
-				fmt.Println(string(jsonData))
-			}
-
-			if err != nil {
-				fmt.Println("Error marshalling JSON:", err)
-				return
-			}
-
-			fmt.Println("上傳至 VANS 中...")
-
 			// Skip SSL verification as testing env
-			if VANSEndpoint != "https://vans.nat.gov.tw" {
+			if VANSEndpoint != "https://vans.nat.gov.tw" && VANSVersion != 1 {
 				http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402
 			}
-			// Make a POST request
-			VANSAPIEndpoint := VANSEndpoint + "/rest/vans/InsertSystemUnitproduct"
-			// As we might assign the testing env URL as variable, therefore add the ignore lint for G107
-			resp, err := http.Post(VANSAPIEndpoint, "application/json", bytes.NewBuffer(jsonData)) // #nosec G107
-			if err != nil {
-				fmt.Println("Error making POST request:", err)
-				return
-			}
-			defer resp.Body.Close()
 
-			// Read response body
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Println("Error reading response body:", err)
-				return
+			// Determine the data to marshal based on VANSVersion
+			var jsonDataToSend []byte
+			var marshalErr error
+			if VANSVersion == 1 {
+				jsonDataToSend, marshalErr = json.Marshal(VANSData)
+			} else if VANSVersion == 2 {
+				jsonDataToSend, marshalErr = json.Marshal(VANSV2Data)
 			}
 
-			// Print response body
-			fmt.Println(string(body))
+			// Check for marshalling error
+			if marshalErr != nil {
+				fmt.Println("Error marshalling JSON for VANS data:", marshalErr)
+				return
+			}
+
+			// Debug print if enabled
+			if DebugMode {
+				fmt.Println("上傳 VANS", VANSVersion, "套件 JSON：")
+				fmt.Println(string(jsonDataToSend))
+			}
+
+			// POST request
+			makeHTTPPost(VANSAPIEndpoint, jsonDataToSend, VANSVersion)
 		},
 	}
 
 	rootCmd.Flags().StringVarP(&SBOMInputPaths, "input-file", "i", "", "指定 SBOM 檔案目錄位置")
 	rootCmd.Flags().StringVarP(&VANSKey, "vans-key", "k", "", "指定 VANS 機關資產管理 API key")
-	rootCmd.Flags().StringVarP(&OId, "oid", "", "", "機關 Object Identifier (OID)，可以至 OID 網站 https://oid.nat.gov.tw/OIDWeb/ 查詢")
+	rootCmd.Flags().StringVarP(&OId, "oid", "o", "", "機關 Object Identifier (OID)，可以至 OID 網站 https://oid.nat.gov.tw/OIDWeb/ 查詢")
 	rootCmd.Flags().StringVarP(&UnitName, "unit-name", "u", "", "機關名稱，如：監察院")
 	rootCmd.Flags().StringVarP(&VANSEndpoint, "vans-url", "", "https://vans.nat.gov.tw", "VANS API URL")
 	rootCmd.Flags().StringVarP(&NVDKey, "nvd-key", "", "", "指定 NVD API key")
+	rootCmd.Flags().StringVarP(&AssetGroupCode, "group", "g", "DEFAULT", "指定資產群組代碼")
+	rootCmd.Flags().IntVarP(&VANSVersion, "vans-version", "", 2, "指定 VANS 版本（1 或 2）")
 	rootCmd.Flags().BoolVarP(&DebugMode, "debug", "", false, "debug mode")
 
 	if err := rootCmd.Execute(); err != nil {
@@ -185,6 +241,45 @@ type VANSItem struct {
 	Category       string `json:"category"`
 	CPE23          string `json:"cpe23"`
 	ProductCPEName string `json:"product_cpename"`
+}
+
+type VANSV2 struct {
+	APIKey string       `json:"api_key"`
+	Data   []VANSV2Item `json:"data"`
+}
+
+type VANSV2Item struct {
+	OID            string `json:"oid"`        // v1 oid
+	OrgName        string `json:"orgName"`    // v1 unit_name
+	Identifier     string `json:"identifier"` // md5(mac address)
+	AssetGroupCode string `json:"assetGroupCode"`
+	AssetName      string `json:"assetName"` // v1 product_name
+	Brand          string `json:"brand"`     // v1 product_vendor
+	Version        string `json:"version"`   // v1 product_version
+	CPE            string `json:"cpe"`       // v1 cpe23
+	CPEName        string `json:"cpeName"`   // v1 product_name
+}
+
+func makeHTTPPost(VANSAPIEndpoint string, jsonData []byte, VANSVersion int) {
+	// As we might assign the testing env URL as variable, therefore add the ignore lint for G107
+	resp, err := http.Post(VANSAPIEndpoint, "application/json", bytes.NewBuffer(jsonData)) // #nosec G107
+	fmt.Println("上傳至 VANS", VANSVersion, "中...")
+
+	if err != nil {
+		fmt.Println("Error making POST request:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return
+	}
+
+	// Print response body
+	fmt.Println(string(body))
 }
 
 func isCVEExist(cves []CVE, cve string) bool {
@@ -277,13 +372,14 @@ func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 	for i, cve := range CVEs {
 		client, err := nvdapi.NewNVDClient(&http.Client{}, apiKey)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("NVDClient Error: ", err)
 		}
 		resp, err := nvdapi.GetCVEs(client, nvdapi.GetCVEsParams{
 			CVEID: ptr(cve.CVE[0]),
 		})
 		if err != nil {
-			log.Fatal(err)
+			// Maybe api key is invalid
+			log.Fatal("NVDClient Error: ", err, " Please check if the NVD API key is valid.")
 		}
 
 		// Only request per CVE for each request, therefore, the first element is the only one
@@ -304,7 +400,7 @@ func getCPEFromSBOM(SBOMInputPaths string, apiKey string) []CVE {
 								CPEMatchString: ptr(cpeWithVersion),
 							})
 							if err != nil {
-								log.Fatal(err)
+								log.Fatal("NVDClient Error: ", err)
 							}
 
 							// Get CPE titles as VANS request product_cpename column
@@ -417,4 +513,48 @@ type scannedPackage struct {
 	Commit    string
 	Version   string
 	DepGroups []string
+}
+
+func getIdentifier() string { // get mac address and hash with sha256
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		log.Fatal("MAC Address Error:", err)
+	}
+
+	var macAddress string
+	for _, interf := range interfaces {
+		if len(interf.HardwareAddr) > 0 {
+			macAddress = interf.HardwareAddr.String()
+			break
+		}
+	}
+
+	if macAddress == "" {
+		log.Fatal("No MAC address found")
+	}
+
+	fmt.Println("MAC Address:", macAddress)
+
+	hash := sha256.Sum256([]byte(macAddress))
+	sha256String := hex.EncodeToString(hash[:])
+	return sha256String
+}
+
+func isDuplicate(data []VANSV2Item, assetName string) bool {
+	for _, item := range data {
+		if item.AssetName == assetName {
+			return true
+		}
+	}
+	return false
+}
+
+func replaceOrAppend(data []VANSV2Item, newData VANSV2Item) []VANSV2Item {
+	for i, item := range data {
+		if item.AssetName == newData.AssetName {
+			data[i] = newData
+			return data
+		}
+	}
+	return append(data, newData)
 }
