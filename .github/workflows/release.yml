@@ -13,7 +13,6 @@ jobs:
       contents: write
     environment: production
     strategy:
-      fail-fast: false
       matrix:
         goos:
           - 'linux'
@@ -32,7 +31,6 @@ jobs:
           GO_SEMVER: '~1.22.1'
 
     runs-on: ubuntu-latest
-    continue-on-error: true
     env:
       FILENAME: sbom2vans
       SRC_DIR: ./cmd/sbom2vans
