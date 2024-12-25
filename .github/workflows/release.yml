@@ -38,13 +38,13 @@ jobs:
           - 'amd64'
           - 'arm64'
         go:
-          - '1.22'
+          - '1.23'
 
         include:
         # Set the minimum Go patch version for the given Go minor
         # Usable via ${{ matrix.GO_SEMVER }}
-        - go: '1.22'
-          GO_SEMVER: '~1.22.1'
+        - go: '1.23'
+          GO_SEMVER: '~1.23'
 
     runs-on: ubuntu-latest
     env:
