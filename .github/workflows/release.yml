@@ -7,13 +7,28 @@ on:
       - 'v[0-9].[0-9]+.[0-9]+-dev'
 
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Create Release
+        run: |
+          gh release create $RELEASE_TAG --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
+    needs: create-release
     permissions:
       packages: write
       contents: write
     environment: production
     strategy:
-      fail-fast: false
       matrix:
         goos:
           - 'linux'
@@ -23,29 +38,56 @@ jobs:
           - 'amd64'
           - 'arm64'
         go:
-          - '1.22'
+          - '1.23'
 
         include:
         # Set the minimum Go patch version for the given Go minor
         # Usable via ${{ matrix.GO_SEMVER }}
-        - go: '1.22'
-          GO_SEMVER: '~1.22.1'
+        - go: '1.23'
+          GO_SEMVER: '~1.23'
 
     runs-on: ubuntu-latest
-    continue-on-error: true
+    env:
+      FILENAME: sbom2vans
+      SRC_DIR: ./cmd/sbom2vans
+      RELEASE_TAG: ${{ github.ref_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Release
-        uses: softprops/action-gh-release@v2
-
-      - name: Push binaries to Github Release Assets
-        uses: wangyoucao577/go-release-action@v1
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          goos: ${{ matrix.goos }}
-          goarch: ${{ matrix.goarch }}
-          goversion: "1.22"
-          project_path: "./cmd/sbom2vans"
-          binary_name: "sbom2vans"
+          go-version: ${{ matrix.go }}
+          go-version-patch: ${{ matrix.GO_SEMVER }}
+
+      - name: Build and Compress Binary
+        run: |
+          # binary suffix
+          EXT=''
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            EXT='.exe'
+          fi
+
+          # Build the binary with a fixed filename
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o $FILENAME$EXT $SRC_DIR
+
+          # Compress the binary based on the OS
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            RELEASE_ASSET_PATH=$FILENAME-$RELEASE_TAG-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+            zip -vr $RELEASE_ASSET_PATH $FILENAME$EXT
+          else
+            RELEASE_ASSET_PATH=$FILENAME-$RELEASE_TAG-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+            tar cvfz $RELEASE_ASSET_PATH $FILENAME$EXT
+          fi
+
+          MD5_SUM=$(md5sum $RELEASE_ASSET_PATH | cut -d ' ' -f 1)
+          MD5_EXT='.md5'
+          MD5_MEDIA_TYPE='text/plain'
+          echo $MD5_SUM >$RELEASE_ASSET_PATH$MD5_EXT
+        
+      - name: Release to GitHub
+        run: |
+          gh release upload $RELEASE_TAG sbom2vans-*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
